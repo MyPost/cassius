@@ -14,17 +14,33 @@ In your `project.clj` file, add to your dependencies:
 
 ## Overview
 
-Cassius is a clojure wrapper around cassandra's thrift interface. It treats cassandra as a big nested store and provides the following abstractions:
+Cassius is a clojure wrapper around cassandra's thrift interface. It treats cassandra as a big mutable nested hashmap and provides the following abstractions:
 
  - cassandra data and schema can be represented as values and clojure maps.
  - keyspaces, column families, rows and columns can be abstracted as nested map layers
  - supercolumns are just one extra level of nesting
  
-Cassius has been used for both mocking and for higher level abstractions on top of cassandra. An ORM has been built and used internally to deal with legacy data.
+The library has been used for both mocking and for higher level abstractions on top of cassandra. An ORM has been built and used internally at MyPost to deal with legacy cassandra data.
 
-## Inspiration
+## Motivation
 
 A lot of ideas of cassius were gleaned from reading source code, mostly from [casyn](https://github.com/mpenet/casyn) and [clj-hector](https://github.com/pingles/clj-hector).
+
+The library was motivated by an inability to reason about what changes the existing monolithic system was doing to the underlying database. In order to move away from the existing system into more agile architecture, the team had to be careful about reworking features without breaking functionality. The typical work of code migration would end up looking something like this:
+
+   1. Get the current state of the DB
+   2. Run some legacy code (java)
+   3. See what has changed in the DB
+   4. Rewrite that change in clojure
+
+`cassius` was designed as a tool for developers to reason about and test changes to cassandra. It also has the following features:
+
+ - Written in thrift in order to support supercolumns in the legacy system.
+ - Abstracts the database in such a way that tests are easy to write and easy to read.
+ - Uses of conditional restarts for more control of error states.
+ - Option to use the component/Lifecycle framework. Mock DB is included for testing purposes.
+ - Uses the Hashmap as a protocol, defined in `cassius.protocols/IMap`.
+    - Methods: `put-in`, `peek-in`, `keys-in`, `drop-in`, `set-in`, `select-in` and `mutate-in`
 
 ## Usage
 
@@ -109,7 +125,7 @@ Two functions - `put-in` and `set-in` - allow manipulation of cassandra state. T
 => {"app" {"user" {"4" {"name" "Dave" "age" "40"}}}}
 ```
 
-#### Testing, Patching and Rollback
+## Patching and Rollback
 Because of the simplicity with which cassandra data is represented, it is easy to manipulate data based upon patching and rolling back db changes:
 
 Initialize database and set up instance i0:
@@ -161,7 +177,7 @@ We can use the diff function to compute differences between instances. d01, d12 
 (def d01 (diff i0 i1))
 
 d01
-=> {:+ {["zoo"] {"kee" {"A" {"stage" "1"}, "B" {"stage" "1"}}}}}
+;; => {:+ {["zoo"] {"kee" {"A" {"stage" "1"}, "B" {"stage" "1"}}}}}
 ```
 
 We do the same for `d12` and `d13`
@@ -176,8 +192,8 @@ d12
 
 (def d23 (diff i2 i3))
 d23
-=> {:+ {["zoo" "kee" "B"] {"stage" "3"},
-        ["zoo" "kee" "A"] {"stage" "3"}}}
+;; => {:+ {["zoo" "kee" "B"] {"stage" "3"},
+aa         ["zoo" "kee" "A"] {"stage" "3"}}}
 ```
 
 #### Patching
@@ -188,10 +204,10 @@ Starting with an empty database, we can now reconstruct each instance in time by
 (-> db
     (drop-in)
     (peek-in))
-=> {}
+;; => {}
 ```
 
-Applying the first patch d01 will transition cassandra from i0 to i1:
+Applying the patch d01 will transition cassandra from i0 to i1:
 
 ```clojure
 (-> db
@@ -201,7 +217,7 @@ Applying the first patch d01 will transition cassandra from i0 to i1:
 ;;                   "B" {"stage" "1"}}}}
 ```
 
-Applying the first rollback d01 will transition cassandra from i1 to i0:
+Applying the rollback d01 will transition cassandra from i1 to i0:
 
 ```clojure
 (-> conn
@@ -210,7 +226,7 @@ Applying the first rollback d01 will transition cassandra from i1 to i0:
 ;; => {}
 ```
 
-Chaining patches will give up back i3 if all of them are applied in order:
+Chaining patches d01, d12 and d23 in order will restore cassandra to i3:
 
 ```clojure
 (-> conn
@@ -227,10 +243,18 @@ Chaining patches will give up back i3 if all of them are applied in order:
 ;;                   "B" {"stage" "3"},
 ;;                   "C" {"stage" "2"},
 ;;                   "D" {"stage" "2"}}}}
+```
 
+We can confirm that there is no difference between i3 and the current state of cassandra.
+
+```clojure
 (diff i3 (peek-in conn))
 ;;=> nil
 ```
+
+## Mocking
+
+TBD
 
 ## TODOs
  
