@@ -63,7 +63,7 @@
      (/ (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 100))
         (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 99))))
 
-(println "CF: Streams in the same block (1000, 90) around R > 1.5"
+#_(println "CF: Streams in the same block (1000, 90) around R > 1.5"
      (/ (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 1000))
         (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 99))))
 

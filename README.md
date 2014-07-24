@@ -22,6 +22,8 @@ Cassius is a clojure wrapper around cassandra's thrift interface. It treats cass
  
 Cassius has been used for both mocking and for higher level abstractions on top of cassandra. An orm has been built and used internally to deal with legacy data.
 
+## Inspiration
+
 A lot of ideas of cassius were gleemed from reading source code, mostly from [casyn](https://github.com/mpenet/casyn) and [clj-hector](https://github.com/pingles/clj-hector).
 
 ## Usage
