@@ -1,5 +1,7 @@
 # cassius
 
+[![Build Status](https://travis-ci.org/MyPost/cassius.png?branch=master)](https://travis-ci.org/MyPost/cassius)\
+
 Cassandra as a big nested map.
 
 ## Installation
