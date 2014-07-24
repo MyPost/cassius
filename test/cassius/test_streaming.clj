@@ -63,8 +63,8 @@
      (/ (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 100))
         (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 99))))
 
-#_(println "CF: Streams in the same block (1000, 90) around R > 1.5"
-     (/ (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 1000))
+(println "CF: Streams in the same block (999, 90) around R > 1.5"
+     (/ (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 999))
         (time-total 100 (nth (stream/stream-column-family conn "sample" "super") 99))))
 
 (println "ROW: Streams in the same block (80, 90) around  0.8 < R < 1.2"
@@ -75,6 +75,6 @@
     (/ (time-total 100 (nth (stream/stream-row conn "sample" "data" "data") 100))
        (time-total 100 (nth (stream/stream-row conn "sample" "data" "data") 99))))
 
-(println "ROW: Streams in a larger block (1000, 90) around R > 9"
-   (/ (time-total 100 (nth (stream/stream-row conn "sample" "data" "data") 1000))
+(println "ROW: Streams in a larger block (999, 90) around R > 9"
+   (/ (time-total 100 (nth (stream/stream-row conn "sample" "data" "data") 999))
       (time-total 100 (nth (stream/stream-row conn "sample" "data" "data") 99))))
