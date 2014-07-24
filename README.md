@@ -24,7 +24,7 @@ Cassius has been used for both mocking and for higher level abstractions on top 
 
 ## Inspiration
 
-A lot of ideas of cassius were gleemed from reading source code, mostly from [casyn](https://github.com/mpenet/casyn) and [clj-hector](https://github.com/pingles/clj-hector).
+A lot of ideas of cassius were gleaned from reading source code, mostly from [casyn](https://github.com/mpenet/casyn) and [clj-hector](https://github.com/pingles/clj-hector).
 
 ## Usage
 
@@ -35,7 +35,7 @@ Cassius can be a little bit overpowered if the developer is not careful. Make su
 ```clojure
 (use 'cassius.core)
 
-(def db (dbect "localhost" 9160)) ;; dbects via the thrift interface
+(def db (connect "localhost" 9160)) ;; dbects via the thrift interface
 (drop-in db) ;; WARNING!!! clears the entire database 
 (peek-in db) ;; => {}, brand new database
 ```
@@ -231,6 +231,11 @@ Chaining patches will give up back i3 if all of them are applied in order:
 (diff i3 (peek-in conn))
 ;;=> nil
 ```
+
+## TODOs
+ 
+ - Write Examples for Mocking and Testing 
+ - Native Filtering and Search
 
 ## Contributors
 
