@@ -1,6 +1,6 @@
 # cassius
 
-[![Build Status](https://travis-ci.org/MyPost/cassius.png?branch=master)](https://travis-ci.org/MyPost/cassius)\
+[![Build Status](https://travis-ci.org/MyPost/cassius.png?branch=master)](https://travis-ci.org/MyPost/cassius)
 
 Cassandra as a big nested map.
 
@@ -8,7 +8,9 @@ Cassandra as a big nested map.
 
 In your `project.clj` file, add to your dependencies:
 
-    [au.com.auspost/cassius "0.1.13"]
+```clojure
+[au.com.auspost/cassius "0.1.13"]
+```
 
 ## Overview
 
