@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/MyPost/cassius.png?branch=master)](https://travis-ci.org/MyPost/cassius)
 
-Cassandra as a big nested map.
+[Cassandra](http://cassandra.apache.org/) as a big nested map.
 
 ## Installation
 
