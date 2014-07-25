@@ -52,7 +52,11 @@
   (-init-schema [pool schema]
     (pool-command pool init-schema schema))
   (-schema      [pool type]
-    (pool-command pool schema type)))
+    (pool-command pool schema type))
+
+  IStream
+  (-stream-in [pool arr opts]
+    (pool-command pool stream-in arr opts)))
 
 (defmethod create :pool [m]
   (assoc (map->ConnectionPool m) :instance (atom nil)))

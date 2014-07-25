@@ -45,7 +45,11 @@
   (-init-schema [db schema]
     (component-command db init-schema schema))
   (-schema      [db type]
-    (component-command db schema type)))
+    (component-command db schema type))
+
+  IStream
+  (-stream-in [db arr opts]
+    (component-command db stream-in arr opts)))
 
 (defmethod print-method Database [v w]
   (.write w (str v)))

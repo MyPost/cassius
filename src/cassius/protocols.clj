@@ -106,3 +106,10 @@
 
 (defn schema [db type]
   (-schema db type))
+
+(defprotocol IStream
+  (-stream-in [conn args opts]))
+
+(defn stream-in
+  [db [ks cf row :as args] & [opts]]
+  (-stream-in db args opts))

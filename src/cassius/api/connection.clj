@@ -2,7 +2,7 @@
   (:require [cassius.common :refer :all]
             [cassius.net.connection :refer [client]]
             [cassius.net.command.keyspace :as ksp]
-            [cassius.protocols :refer [IMap IDatabase]]
+            [cassius.protocols :refer [IMap IDatabase IStream]]
             [cassius.schema.outline :as sch-ol]
             [cassius.schema.replica :as sch-rp]
             [cassius.api.connection.set-in :refer [set-in]]
@@ -12,6 +12,7 @@
             [cassius.api.connection.put-in :refer [put-in]]
             [cassius.api.connection.peek-in :refer [peek-in]]
             [cassius.api.connection.select-in :refer [select-in]]
+            [cassius.api.connection.stream-in :refer [stream-in]]
             [ribol.core :refer [raise]])
   (:import [org.apache.cassandra.thrift Cassandra$Client]))
 
@@ -62,3 +63,8 @@
     (init-schema-conn db schema))
   (-schema      [db type]
     (schema-conn db type)))
+
+(extend-protocol IStream
+  cassius.net.connection.Connection
+  (-stream-in [db args opts]
+    (stream-in db args opts)))
