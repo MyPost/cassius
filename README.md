@@ -149,10 +149,6 @@ For batch mutations on a single keyspace, `mutate-in` can be used. The data can 
 ;;                                        "DATA-2" {"price" "$400" "value" "2"}}}}}
 ```
 
-    (peek-in))
-;; => {}
-```
-
 Chaining patches d01, d12 and d23 in order will restore cassandra to i3:
 
 ```clojure
