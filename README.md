@@ -149,32 +149,6 @@ For batch mutations on a single keyspace, `mutate-in` can be used. The data can 
 ;;                                        "DATA-2" {"price" "$400" "value" "2"}}}}}
 ```
 
-Chaining patches d01, d12 and d23 in order will restore cassandra to i3:
-
-```clojure
-(-> conn
-    (patch d01)
-    (patch d12)
-    (peek-in))
-;; => {"zoo" {"kee" {"C" {"stage" "2"}
-;;                   "D" {"stage" "2"}}}}
-
-(-> conn
-    (patch d23)
-    (peek-in))
-;; => {"zoo" {"kee" {"A" {"stage" "3"},
-;;                   "B" {"stage" "3"},
-;;                   "C" {"stage" "2"},
-;;                   "D" {"stage" "2"}}}}
-```
-
-We can confirm that there is no difference between i3 and the current state of cassandra.
-
-```clojure
-(diff i3 (peek-in conn))
-;;=> nil
-```
-
 ## IMap Protocol
 
 cassius was constructed from the bottom up using the cassius.protocols/IMap protocol There are four different types defined within cassius that extend cassius.protocols/IMap:
@@ -318,6 +292,35 @@ Applying the rollback d01 will transition cassandra from i1 to i0:
 ```clojure
 (-> conn
     (rollback d01)
+    (peek-in))
+;; => {}
+```
+
+Chaining patches d01, d12 and d23 in order will restore cassandra to i3:
+
+```clojure
+(-> conn
+    (patch d01)
+    (patch d12)
+    (peek-in))
+;; => {"zoo" {"kee" {"C" {"stage" "2"}
+;;                   "D" {"stage" "2"}}}}
+
+(-> conn
+    (patch d23)
+    (peek-in))
+;; => {"zoo" {"kee" {"A" {"stage" "3"},
+;;                   "B" {"stage" "3"},
+;;                   "C" {"stage" "2"},
+;;                   "D" {"stage" "2"}}}}
+```
+
+We can confirm that there is no difference between i3 and the current state of cassandra.
+
+```clojure
+(diff i3 (peek-in conn))
+;;=> nil
+```
 
 ## Lifecycle Protocol and Mocks
 
