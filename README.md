@@ -9,8 +9,14 @@
 In your `project.clj` file, add to your dependencies:
 
 ```clojure
-[au.com.auspost/cassius "0.1.13"]
+[au.com.auspost/cassius "0.1.14"]
 ```
+
+## What's New
+
+#### 0.1.4
+
+ - Added `IStream` protocol and `stream-in`
 
 ## Overview
 
@@ -20,7 +26,7 @@ Cassius is a clojure wrapper around cassandra's thrift interface. It treats cass
  - keyspaces, column families, rows and columns can be abstracted as nested map layers
  - supercolumns are just one extra level of nesting
  
-The library has been used for both mocking and for higher level abstractions on top of cassandra. An ORM has been built and used internally at MyPost to deal with legacy cassandra data.
+The library has been used for both mocking and for higher level abstractions on top of cassandra. An ORM has been built and used internally at [MyPost](digitalmailbox.com.au) to deal with legacy cassandra data.
 
 ## Motivation
 
@@ -44,21 +50,21 @@ The library was motivated by an inability to reason about what changes the exist
 
 ## Usage
 
-#### From Scratch
+#### Empty Your Database
 
-Cassius can be a little bit overpowered if the developer is not careful. Make sure to backup important data when playing with around with the library:
+This library can be a little bit overpowered if the developer is not careful. Make sure to backup important data when playing with around with the library:
 
 ```clojure
 (use 'cassius.core)
 
-(def db (connect "localhost" 9160)) ;; dbects via the thrift interface
+(def db (connect "localhost" 9160 {:value-type :utf-8})) ;; connects via the thrift interface
 (drop-in db) ;; WARNING!!! clears the entire database 
 (peek-in db) ;; => {}, brand new database
 ```
 
 #### Adding and Retrieving Data
 
-Starting with an empty database, we can put data into cassandra using `put-in`, as well as look at the state of cassandra using `peek-in`:
+Once an empty database is established, we can put data into cassandra using `put-in`, as well as look at the state of cassandra using `peek-in`:
 
 ```clojure
 (put-in  db {"app" {"user" {"1" {"age"  "10"}}}})
@@ -123,6 +129,100 @@ Two functions - `put-in` and `set-in` - allow manipulation of cassandra state. T
 
 (peek-in db)
 => {"app" {"user" {"4" {"name" "Dave" "age" "40"}}}}
+```
+
+#### Mutation
+
+For batch mutations on a single keyspace, `mutate-in` can be used. The data can be both normal and super columns:
+
+```clojure
+(-> db
+    (drop-in)
+    (mutate-in "crystals"
+               {"species" {"citrine" {"DATA-1" {"price" "$400" "value" "2"}}}}
+               [])
+    (mutate-in "crystals"
+               {"species" {"citrine" {"DATA-2" {"price" "$500" "value" "2"}}}}
+               [["species" "citrine" "DATA-1" "price"]])
+    (peek-in))
+;;  => {"crystals" {"species" {"citrine" {"DATA-1" {"value" "2"}
+;;                                        "DATA-2" {"price" "$400" "value" "2"}}}}}
+```
+
+    (peek-in))
+;; => {}
+```
+
+Chaining patches d01, d12 and d23 in order will restore cassandra to i3:
+
+```clojure
+(-> conn
+    (patch d01)
+    (patch d12)
+    (peek-in))
+;; => {"zoo" {"kee" {"C" {"stage" "2"}
+;;                   "D" {"stage" "2"}}}}
+
+(-> conn
+    (patch d23)
+    (peek-in))
+;; => {"zoo" {"kee" {"A" {"stage" "3"},
+;;                   "B" {"stage" "3"},
+;;                   "C" {"stage" "2"},
+;;                   "D" {"stage" "2"}}}}
+```
+
+We can confirm that there is no difference between i3 and the current state of cassandra.
+
+```clojure
+(diff i3 (peek-in conn))
+;;=> nil
+```
+
+## IMap Protocol
+
+cassius was constructed from the bottom up using the cassius.protocols/IMap protocol There are four different types defined within cassius that extend cassius.protocols/IMap:
+
+A Raw Connection
+```clojure
+(connect "localhost" 9160 {:type :connection}) 
+```
+
+A Connection Pool
+```clojure
+(connect "localhost" 9160 {:type :pool}) ;; default
+```
+
+A Cassandra Database Component
+```clojure
+(database {:host "localhost" :port 9160})
+```
+
+A Mock Database Component
+```clojure
+(database {:type :mock})
+```
+
+Again, IMap methods: `put-in`, `peek-in`, `keys-in`, `drop-in`, `set-in`, `select-in` and `mutate-in` work on any of the four types. The difference between a raw connection and a connection pool is that the pool can be accessed with multiple threads whilst the raw connection cannot. See our [tests](https://github.com/MyPost/cassius/blob/master/test/cassius/test_core_patch_rollback.clj#L143-L170) to see the expected behaviour.
+
+## IStream Protocol
+
+Since version `0.1.14`, a new protocol IStream was exposed and the function `stream-in` returns a lazy sequence of maps for entire column-families and rows. The usage looks like all the IMap protocols:
+
+```clojure
+(stream-in db ["crystals" "species"] {:start "agate" :end "citrine" :batch 20})
+;; =>  [["agate" {:price 300.00}]
+;;      ["onyx"  {:price 100.00}]]
+```
+
+Because the stream is lazy, clojure's sequence methods work as usual:
+
+```clojure
+(->> (stream-in db ["crystals" "species"])
+    (map (fn [[k v]]
+           (:price v)))
+    (filter #(> % 300))
+    (take 10))
 ```
 
 ## Patching and Rollback
@@ -222,44 +322,98 @@ Applying the rollback d01 will transition cassandra from i1 to i0:
 ```clojure
 (-> conn
     (rollback d01)
-    (peek-in))
-;; => {}
-```
 
-Chaining patches d01, d12 and d23 in order will restore cassandra to i3:
+## Lifecycle Protocol and Mocks
 
-```clojure
-(-> conn
-    (patch d01)
-    (patch d12)
-    (peek-in))
-;; => {"zoo" {"kee" {"C" {"stage" "2"}
-;;                   "D" {"stage" "2"}}}}
+Most of MyPost's newly written services have been using Stuart Sierra's component framework. The framework takes care of dependency injection and there are two types of components that can be constructed:
 
-(-> conn
-    (patch d23)
-    (peek-in))
-;; => {"zoo" {"kee" {"A" {"stage" "3"},
-;;                   "B" {"stage" "3"},
-;;                   "C" {"stage" "2"},
-;;                   "D" {"stage" "2"}}}}
-```
-
-We can confirm that there is no difference between i3 and the current state of cassandra.
+Here is an example of using the Cassandra Database Component
 
 ```clojure
-(diff i3 (peek-in conn))
-;;=> nil
+(require '[com.stuartsierra.component :as component])
+(def db (-> (database {:host "localhost" :port 9160 :value-type :utf-8})
+            (component/start)))
+
+(drop-in db)
+(put-in db {"crystals" {"species" {"citrine" {"price" "400"}}}})
+(peek-in db) ;; => {"crystals" {"species" {"citrine" {"price" "400"}}}}
+(keys-in db) ;; => ["crystals"] 
 ```
 
-## Mocking
+Here is an example of using the Mock Database Component:
 
-TBD
+```clojure
+(def mock-db (-> (database {:type :mock})
+                 (component/start)))
 
-## TODOs
+(drop-in db)
+(put-in db {"crystals" {"species" {"citrine" {"price" "400"}}}})
+(peek-in db) ;; => {"crystals" {"species" {"citrine" {"price" "400"}}}}
+(keys-in db) ;; => ["crystals"] 
+```
+
+The mock database is a very simple in memory store (backed by an atom). Because the governing design of cassius was to be able to treat the cassandra datastore as a single mutable hashmap, it was very easy to implement the mock and to be able to swap between a real datastore and a mock at any time.
+
+Both real and mock database components work with all IMap methods - `put-in`, `peek-in`, `keys-in`, `drop-in`, `set-in`, `select-in` and `mutate-in`. 
+
+Notice that there is no difference in how the two systems are behaving. The great thing about this design is that the only thing that needs to change in order to convert a real database into a mock database and vice-versa can be declared via the initialisation map, which usually gets passed in via the configuration file. In this way, our mocking and production systems can be swapped in and out as needed.
  
- - Write Examples for Mocking and Testing 
- - Native Filtering and Search
+## Settings Schema
+
+For greater control of the data, a schema can be attached to the connection such that data will be converted back into the right format. Type conversion it works for both normal columns and supercolumns.
+
+The type conversion will only work for reading data from cassandra. So for instance, if the `long` value `400` is put into cassandra and the schema expects the the format is a `double`, the output will not be `400.00` but a seemingly random double (ie. `1.976E-321`)
+
+```clojure
+(def db (-> (database {:host "localhost" 
+                       :port 9160
+                       :schema {"crystals" {"species" {"price" [:double]
+                                                       "sold"  [:date]}}}
+                       :key-type   :utf-8    ;; default is :utf-8 
+                       :value-type :utf-8    ;; default is :default returns (raw bytes)
+                       })
+             (component/start)))
+
+;; NORMAL COLUMNS
+
+(-> db
+    (drop-in)
+    (put-in {"crystals" {"species" {"citrine" {"price" 400.00 "sold" #inst "1970-01-01T00:00:00.000-00:00"}}}})
+    (peek-in))
+;; => {"crystals" {"species" {"citrine" {"sold" #inst "1970-01-01T00:00:00.000-00:00", "price" 400.0}}}}
+  
+;; SUPER COLUMNS
+(-> db
+    (drop-in)
+    (mutate-in "crystals"
+               {"species" {"citrine" {"DATA" {"price" 400.00 "value" "2"}}}}
+               [])
+    (peek-in)    
+;; => {"crystals" {"species" {"citrine" {"DATA" {"value" "2", "price" 400.0}}}}}
+```
+
+The following types are supported through keyword labels. Most of the labels correspond to the types in `org.apache.cassandra.db.marshal.*` package. There are three exceptions:
+ 
+  - `:default` returns the actual bytes that are stored in the database, 
+  - `:raw` returns a hexified view of the bytes 
+  - `:object` using [nippy](https://github.com/ptaoussanis/nippy) to coerce between bytes and the java object.
+
+Existing marshalled types are:
+
+  - `:utf-8`        UTF8Type
+  - `:ascii`        AsciiType
+  - `:long`         LongType
+  - `:float`        FloatType
+  - `:double`       DoubleType
+  - `:int`          Int32Type
+  - `:bigint`       IntegerType
+  - `:bigdec`       DecimalType
+  - `:boolean`      BooleanType
+  - `:date`         DateType
+  - `:uuid`         UUIDType
+  - `:lexical-uuid` UUIDType
+  - `:keyword`      UTF8Type
+  - `:time-uuid`    UUIDType
 
 ## Contributors
 

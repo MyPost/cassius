@@ -1,4 +1,4 @@
-(defproject au.com.auspost/cassius "0.1.14-SNAPSHOT"
+(defproject au.com.auspost/cassius "0.1.14"
   :description "Cassandra as a Big Nested Map"
   :url "https://git.npe.apdm.local/core-tools/cassius"
   :license {:name "Apache License - v2.0"

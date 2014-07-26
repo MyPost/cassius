@@ -12,7 +12,7 @@
         [create connect disconnect
          put-in peek-in keys-in drop-in set-in select-in mutate-in
          init-schema schema
-         stream-in]
+         stream-in to-bbuff]
 
         cassius.component      [database])
 

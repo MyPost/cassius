@@ -3,7 +3,7 @@
             [cassius.net.command.retrieve :refer [retrieve-column-family retrieve-row retrieve-column]]
             [cassius.net.command.stream :as stream]
             [cassius.api.connection.keys-in :refer [keys-in]]
-            [cassius.protocols :refer [from-bytes *default-key-encoding* *default-value-encoding*]]
+            [cassius.protocols :refer [from-bytes ]]
             [cassius.types.byte-buffer]
             [cassius.data.outline :as c]
             [ribol.core :refer [raise manage on]])
@@ -16,12 +16,14 @@
   ([^Column col]
      (column->outline-entry col nil nil))
   ([^Column col tname tvalue]
-     [(from-bytes (.getName col) (or tname *default-key-encoding*))
-      (from-bytes (.getValue col) (or tvalue *default-value-encoding*))]))
+     [(from-bytes (.getName col)
+                  (or tname cassius.protocols/*default-key-encoding*))
+      (from-bytes (.getValue col)
+                  (or tvalue cassius.protocols/*default-value-encoding*))]))
 
 (defn supercolumn->outline-entry
   ([^SuperColumn scol]
-     (supercolumn->outline-entry scol *default-key-encoding* nil))
+     (supercolumn->outline-entry scol cassius.protocols/*default-key-encoding* nil))
   ([^SuperColumn scol tname tmap]
      (let [cols  (.getColumns scol)
            names (map (fn [c]
@@ -34,7 +36,7 @@
 
 (defn optioncolumn->outline-entry
   ([^ColumnOrSuperColumn opcol]
-     (optioncolumn->outline-entry opcol *default-key-encoding* nil))
+     (optioncolumn->outline-entry opcol cassius.protocols/*default-key-encoding* nil))
   ([^ColumnOrSuperColumn opcol tname tmap]
      (let [subcol (or (.getSuper_column opcol)
                       (.getColumn opcol))]
@@ -44,7 +46,7 @@
                                (from-bytes (.getName subcol))
                                (get tmap)
                                first)
-                          *default-value-encoding*)]
+                          cassius.protocols/*default-value-encoding*)]
            (column->outline-entry subcol tname tvalue))
 
          SuperColumn
@@ -52,7 +54,7 @@
 
 (defn keyslice->outline-entry
   ([^KeySlice ksl]
-     (keyslice->outline-entry ksl *default-key-encoding* nil))
+     (keyslice->outline-entry ksl cassius.protocols/*default-key-encoding* nil))
   ([^KeySlice ksl tname tmap]
      [(from-bytes (.getKey ksl) tname)
       (->> (.getColumns ksl)
@@ -61,7 +63,7 @@
 
 (defn default-encodings [conn ks cf]
   [(or (-> conn :key-type (get-in [ks cf]))
-       *default-key-encoding*)
+       cassius.protocols/*default-key-encoding*)
    (or (-> conn :schema   (get-in [ks cf]))
        {})])
 
@@ -105,8 +107,9 @@
   ([conn]
      (peek-in-db conn))
   ([conn arr]
-     (binding [*default-value-encoding* (or (-> conn :value-type)
-                                            *default-value-encoding*)]
+     (binding [cassius.protocols/*default-value-encoding*
+               (or (-> conn :value-type)
+                   cassius.protocols/*default-value-encoding*)]
        (condp = (count arr)
          0 (peek-in-db conn)
          1 (apply peek-in-keyspace conn arr)

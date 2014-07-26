@@ -23,7 +23,7 @@
 (defn into-full
   [m colls]
   (reduce (fn [m [k v]]
-            (if-not (empty? v)
+            (if-not (and (coll? v) (empty? v))
               (assoc m k v)
               m))
           m
