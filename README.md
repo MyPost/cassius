@@ -14,7 +14,7 @@ In your `project.clj` file, add to your dependencies:
 
 ## What's New
 
-#### 0.1.4
+#### 0.1.14
 
  - Added `IStream` protocol and `stream-in`
 
