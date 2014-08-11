@@ -12,7 +12,7 @@
  (def settings (read-string (slurp "settings.edn")))
  (def host (or (:host settings) "localhost"))
  (def port (or (:port settings) 9160))
- (def conn (connect host port settings)))
+ (def conn (connect host port (assoc settings :atomic true))))
 
 (facts
 

@@ -1,11 +1,11 @@
-(defproject au.com.auspost/cassius "0.1.14"
+(defproject au.com.auspost/cassius "0.1.15-SNAPSHOT"
   :description "Cassandra as a Big Nested Map"
   :url "https://git.npe.apdm.local/core-tools/cassius"
   :license {:name "Apache License - v2.0"
               :url "http://www.apache.org/licenses/LICENSE-2.0.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [im.chit/ribol "0.4.0"]
-                 [im.chit/hara.namespace.import "2.1.0"]
+                 [im.chit/hara.namespace.import "2.1.1"]
                  [com.taoensso/nippy "2.5.2"]
                  [com.eaio.uuid/uuid "3.2"]
                  [com.stuartsierra/component "0.2.1"]
